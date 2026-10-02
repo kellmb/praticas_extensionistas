@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal Computação Desplugada — MVP v0.1</title>
+
+<style>
+/* paleta da apresentação (azul-petróleo, amarelo, coral, branco) */
+:root{--azul:#0b3a55;--amarelo:#f2b600;--coral:#c8431f;--fundo:#f7f7f4;--texto:#12232e;--verde:#2f7d4f}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 "Segoe UI",system-ui,sans-serif;background:var(--fundo);color:var(--texto)}
+header{background:var(--azul);color:#fff;padding:18px 24px}
+header h1{margin:0;font-size:1.4rem}
+header p{margin:4px 0 0;opacity:.85;font-size:.95rem}
+nav{display:flex;gap:8px;padding:12px 24px;background:#fff;border-bottom:3px solid var(--amarelo);flex-wrap:wrap}
+nav button{font:inherit;font-weight:600;padding:8px 16px;border:2px solid var(--azul);background:#fff;color:var(--azul);border-radius:6px;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--azul);color:#fff}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--amarelo);outline-offset:2px}
+main{max-width:1100px;margin:0 auto;padding:24px}
+section[hidden]{display:none}
+h2{margin-top:0;color:var(--azul)}
+.barra{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+input,select{font:inherit;padding:8px 10px;border:2px solid var(--azul);border-radius:6px;background:#fff}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+.card{background:#fff;border:2px solid var(--azul);border-radius:8px;padding:14px}
+.card h3{margin:0 0 6px;color:var(--azul)}
+.card.ref{border-style:dashed}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;background:var(--amarelo);color:var(--texto);font-size:.85rem;font-weight:600}
+.tag.ref{background:#dde6ec}
+.card ul{margin:6px 0 0;padding-left:18px}
+table{width:100%;border-collapse:collapse;background:#fff}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #d5dde2}
+th{background:var(--azul);color:#fff}
+.btn{font:inherit;font-weight:600;padding:6px 12px;border-radius:6px;border:2px solid var(--azul);background:var(--azul);color:#fff;cursor:pointer}
+.btn.sec{background:#fff;color:var(--azul)}
+.presente{color:var(--verde);font-weight:700}
+.ausente{color:var(--coral);font-weight:700}
+.kanban{display:grid;grid-template-columns:repeat(4,minmax(200px,1fr));gap:12px;overflow-x:auto}
+.col{background:#e9eef1;border-radius:8px;padding:10px;min-height:120px}
+.col h3{margin:0 0 8px;font-size:1rem;color:var(--azul)}
+.kcard{background:#fff;border-left:5px solid var(--azul);border-radius:6px;padding:8px;margin-bottom:8px;font-size:.92rem}
+.kcard small{display:block;color:#4a5b66}
+.kcard .acoes{display:flex;gap:6px;margin-top:6px}
+.prog{background:#d5dde2;border-radius:6px;height:14px;overflow:hidden}
+.prog>div{background:var(--verde);height:100%}
+#testes{white-space:pre-wrap;background:#fff;border:2px dashed var(--azul);padding:10px;margin-top:12px}
+footer{padding:16px 24px;color:#4a5b66;font-size:.9rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>Jogos de Computação Desplugada — 8º ano</h1>
+  <p>Portal do professor · MVP v0.1 com dados simulados (Grupo 3)</p>
+</header>
+
+<nav role="tablist" aria-label="Módulos">
+  <button role="tab" aria-selected="true" data-aba="catalogo">Catálogo de jogos</button>
+  <button role="tab" aria-selected="false" data-aba="frequencia">Frequência</button>
+  <button role="tab" aria-selected="false" data-aba="painel">Painel do projeto</button>
+</nav>
+
+<main>
+  <!-- módulo 1 — levantamento dos jogos (nossos 3 + referências simuladas) -->
+  <section id="catalogo">
+    <h2>Catálogo de jogos</h2>
+    <div class="barra">
+      <input id="busca" type="search" placeholder="Buscar por nome, subtema ou material" aria-label="Buscar jogos">
+      <select id="filtroTipo" aria-label="Filtrar por tipo">
+        <option value="todos">Todos</option>
+        <option value="nosso">Jogos do Grupo 3</option>
+        <option value="ref">Jogos de referência (simulados)</option>
+      </select>
+    </div>
+    <div id="listaJogos" class="grade"></div>
+  </section>
+
+  <!-- módulo 2 — registro de frequência nos testes-piloto -->
+  <section id="frequencia" hidden>
+    <h2>Registro de frequência</h2>
+    <div class="barra">
+      <select id="sessao" aria-label="Sessão de teste-piloto"></select>
+      <input id="novoAluno" placeholder="Nome do participante" aria-label="Nome do participante">
+      <button class="btn" id="addAluno">Adicionar</button>
+      <button class="btn sec" id="resetFreq">Zerar sessão</button>
+    </div>
+    <table>
+      <thead><tr><th>Participante</th><th>Situação</th><th>Ação</th></tr></thead>
+      <tbody id="tabelaFreq"></tbody>
+    </table>
+    <p id="resumoFreq" aria-live="polite"></p>
+  </section>
+
+  <!-- módulo 3 — painel do projeto (espelha o Kanban do grupo) -->
+  <section id="painel" hidden>
+    <h2>Painel do projeto</h2>
+    <div id="progressos" class="grade" style="margin-bottom:16px"></div>
+    <div id="kanban" class="kanban"></div>
+  </section>
+
+  <p><button class="btn sec" id="btnTestes">Rodar testes rápidos</button>
+     <button class="btn sec" id="btnReset">Restaurar dados simulados</button></p>
+  <div id="testes" hidden></div>
+</main>
+<footer>Dados simulados, salvos apenas neste navegador (localStorage). Não é o design final.</footer>
+
+<script>
+/* ===== dados simulados ===== */
+const CHAVE = 'desplugada_mvp_v01';
+const COLUNAS = ['A Fazer', 'Em Andamento', 'Em Revisão', 'Concluído'];
+
+const JOGOS = [
+  {id:'rede', tipo:'nosso', nome:'Rede (Des)Conectada', subtema:'Disseminação de informação / fake news',
+   habilidade:'Reconhecer o impacto da desinformação e o papel do usuário na propagação de conteúdo.',
+   tempo:'2 aulas de 50 min', materiais:['Cartões de perfil','Cartões de notícia','Barbante','Mapa da rede']},
+  {id:'pegadas', tipo:'nosso', nome:'Pegadas Digitais', subtema:'Privacidade e proteção de dados pessoais',
+   habilidade:'Compreender a exposição de dados pessoais e suas consequências.',
+   tempo:'2 aulas de 50 min', materiais:['Perfil fictício em cartas','Semáforo da privacidade','Roteiro de perguntas']},
+  {id:'tribunal', tipo:'nosso', nome:'Tribunal do Comentário', subtema:'Ética, respeito e convivência online',
+   habilidade:'Reconhecer condutas nocivas e formas de mediação no ambiente digital.',
+   tempo:'2 aulas de 50 min', materiais:['Cartões de caso','Papéis','Ficha de moderação','Regras da comunidade']}
+];
+// Referências SIMULADAS: substituir pelo levantamento real de jogos existentes
+const REFS = [
+  {id:'ref1', tipo:'ref', nome:'Jogo de referência A (simulado)', subtema:'Algoritmos e sequências',
+   habilidade:'Seguir e descrever passos ordenados.', tempo:'1 aula', materiais:['Papel','Lápis']},
+  {id:'ref2', tipo:'ref', nome:'Jogo de referência B (simulado)', subtema:'Representação binária',
+   habilidade:'Representar números com dois símbolos.', tempo:'1 aula', materiais:['Cartas de pontos']},
+  {id:'ref3', tipo:'ref', nome:'Jogo de referência C (simulado)', subtema:'Redes e roteamento',
+   habilidade:'Encontrar caminhos em uma rede.', tempo:'2 aulas', materiais:['Barbante','Cartões']}
+];
+const TODOS = JOGOS.concat(REFS);
+
+const ALUNOS_INICIAIS = ['Participante 1','Participante 2','Participante 3','Participante 4','Participante 5','Participante 6'];
+
+// Cartões do Kanban baseados na seção 5 da proposta; colunas iniciais são simuladas (0..3)
+const CARTOES_INICIAIS = [
+  ['geral','Levantamento de necessidades com escolas (8º ano)',1],
+  ['geral','Consolidar documento de proposta para envio',3],
+  ['geral','Definir ferramenta e formato de apresentação final',2],
+  ['rede','Roteiro/regras do jogo',3],['rede','Preparar materiais (cartões, barbante)',1],
+  ['rede','Teste-piloto com colegas/turma',0],['rede','Ajustes finais',0],
+  ['pegadas','Criar perfil(is) fictício(s) e informações a revelar',2],['pegadas','Preparar materiais (cartões, roteiro)',1],
+  ['pegadas','Teste-piloto com colegas/turma',0],['pegadas','Ajustes finais',0],
+  ['tribunal','Escrever casos/situações de dramatização',1],['tribunal','Definir regras de moderação e critérios',0],
+  ['tribunal','Teste-piloto com colegas/turma',0],['tribunal','Ajustes finais',0]
+].map((c, i) => ({id:i, jogo:c[0], titulo:c[1], coluna:c[2]}));
+
+/* ===== estado + persistência ===== */
+function estadoInicial(){
+  return {
+    alunos: ALUNOS_INICIAIS.slice(),
+    freq: {},                       // { sessaoId: { nome: true/false } }
+    cartoes: CARTOES_INICIAIS.map(c => Object.assign({}, c))
+  };
+}
+function carregar(){
+  try { const s = localStorage.getItem(CHAVE); if (s) return JSON.parse(s); } catch(e) { console.warn('Sem localStorage', e); }
+  return estadoInicial();
+}
+function salvar(){ try { localStorage.setItem(CHAVE, JSON.stringify(estado)); } catch(e) {} }
+let estado = carregar();
+
+/* ===== NOVO v0.1: funções puras (usadas também nos testes) ===== */
+const semAcento = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function filtrar(q, tipo){
+  const b = semAcento(q || '');
+  return TODOS.filter(j => (!tipo || tipo === 'todos' || j.tipo === tipo) &&
+    semAcento([j.nome, j.subtema, j.materiais.join(' ')].join(' ')).includes(b));
+}
+function pctPresenca(mapa){
+  const v = Object.values(mapa || {});
+  return v.length ? Math.round(100 * v.filter(Boolean).length / v.length) : 0;
+}
+function mover(cartao, delta){ // delta = +1 avança, -1 volta; limita entre 0 e 3
+  cartao.coluna = Math.min(3, Math.max(0, cartao.coluna + delta));
+  return cartao;
+}
+function progresso(cartoes, jogo){
+  const l = cartoes.filter(c => c.jogo === jogo);
+  return l.length ? Math.round(100 * l.filter(c => c.coluna === 3).length / l.length) : 0;
+}
+const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ===== render — catálogo ===== */
+function renderCatalogo(){
+  const lista = filtrar(document.getElementById('busca').value, document.getElementById('filtroTipo').value);
+  document.getElementById('listaJogos').innerHTML = lista.length ? lista.map(j => `
+    <article class="card ${j.tipo === 'ref' ? 'ref' : ''}">
+      <span class="tag ${j.tipo === 'ref' ? 'ref' : ''}">${j.tipo === 'ref' ? 'Referência (simulado)' : 'Jogo do Grupo 3'}</span>
+      <h3>${esc(j.nome)}</h3>
+      <p><strong>Subtema:</strong> ${esc(j.subtema)}<br><strong>Habilidade:</strong> ${esc(j.habilidade)}<br><strong>Tempo:</strong> ${esc(j.tempo)}</p>
+      <strong>Materiais:</strong><ul>${j.materiais.map(m => `<li>${esc(m)}</li>`).join('')}</ul>
+    </article>`).join('') : '<p>Nenhum jogo encontrado. Tente outro termo.</p>';
+}
+
+/* ===== render — frequência ===== */
+function sessaoAtual(){ return document.getElementById('sessao').value; }
+function renderFrequencia(){
+  const s = sessaoAtual();
+  const mapa = estado.freq[s] || (estado.freq[s] = {});
+  document.getElementById('tabelaFreq').innerHTML = estado.alunos.map((nome, i) => {
+    const p = !!mapa[nome];
+    return `<tr><td>${esc(nome)}</td>
+      <td class="${p ? 'presente' : 'ausente'}">${p ? 'Presente' : 'Ausente'}</td>
+      <td><button class="btn sec" data-i="${i}">Marcar ${p ? 'ausente' : 'presente'}</button></td></tr>`;
+  }).join('');
+  const total = estado.alunos.length, pres = estado.alunos.filter(n => mapa[n]).length;
+  document.getElementById('resumoFreq').textContent = `${pres} de ${total} presentes (${pctPresenca(Object.fromEntries(estado.alunos.map(n => [n, !!mapa[n]])))}%).`;
+}
+
+/* ===== render — painel/Kanban ===== */
+function renderPainel(){
+  document.getElementById('progressos').innerHTML = [['geral','Geral do projeto']].concat(JOGOS.map(j => [j.id, j.nome])).map(([id, nome]) => {
+    const p = progresso(estado.cartoes, id);
+    return `<div class="card"><strong>${esc(nome)}</strong> — ${p}% concluído
+      <div class="prog" role="progressbar" aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100"><div style="width:${p}%"></div></div></div>`;
+  }).join('');
+  document.getElementById('kanban').innerHTML = COLUNAS.map((nome, col) => {
+    const cs = estado.cartoes.filter(c => c.coluna === col);
+    return `<div class="col"><h3>${nome} (${cs.length})</h3>${cs.map(c => `
+      <div class="kcard"><small>${esc((TODOS.find(j => j.id === c.jogo) || {nome:'Geral'}).nome)}</small>${esc(c.titulo)}
+      <div class="acoes">
+        <button class="btn sec" data-id="${c.id}" data-d="-1" aria-label="Voltar cartão" ${col === 0 ? 'disabled' : ''}>Voltar</button>
+        <button class="btn sec" data-id="${c.id}" data-d="1" aria-label="Avançar cartão" ${col === 3 ? 'disabled' : ''}>Avançar</button>
+      </div></div>`).join('')}</div>`;
+  }).join('');
+}
+
+/* ===== eventos ===== */
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('nav button').forEach(x => x.setAttribute('aria-selected', x === b));
+  ['catalogo','frequencia','painel'].forEach(id => document.getElementById(id).hidden = (id !== b.dataset.aba));
+  if (b.dataset.aba === 'painel') renderPainel();
+  if (b.dataset.aba === 'frequencia') renderFrequencia();
+}));
+document.getElementById('busca').addEventListener('input', renderCatalogo);
+document.getElementById('filtroTipo').addEventListener('change', renderCatalogo);
+document.getElementById('sessao').innerHTML = JOGOS.map(j => `<option value="${j.id}">Teste-piloto — ${esc(j.nome)}</option>`).join('');
+document.getElementById('sessao').addEventListener('change', renderFrequencia);
+document.getElementById('addAluno').addEventListener('click', () => {
+  const inp = document.getElementById('novoAluno'), nome = inp.value.trim();
+  if (!nome || estado.alunos.includes(nome)) { inp.focus(); return; }   // ignora vazio e duplicado
+  estado.alunos.push(nome); inp.value = ''; salvar(); renderFrequencia();
+});
+document.getElementById('tabelaFreq').addEventListener('click', e => {
+  const b = e.target.closest('button[data-i]'); if (!b) return;
+  const nome = estado.alunos[+b.dataset.i], mapa = estado.freq[sessaoAtual()];
+  mapa[nome] = !mapa[nome]; salvar(); renderFrequencia();
+});
+document.getElementById('resetFreq').addEventListener('click', () => { estado.freq[sessaoAtual()] = {}; salvar(); renderFrequencia(); });
+document.getElementById('kanban').addEventListener('click', e => {
+  const b = e.target.closest('button[data-id]'); if (!b) return;
+  mover(estado.cartoes.find(c => c.id === +b.dataset.id), +b.dataset.d); salvar(); renderPainel();
+});
+document.getElementById('btnReset').addEventListener('click', () => { estado = estadoInicial(); salvar(); renderCatalogo(); renderFrequencia(); renderPainel(); });
+
+/* ===== testes rápidos com os dados simulados ===== */
+document.getElementById('btnTestes').addEventListener('click', () => {
+  const r = [], t = (nome, ok) => r.push((ok ? '✔ ' : '✘ ') + nome);
+  t('catálogo tem 3 jogos do grupo', JOGOS.length === 3);
+  t('busca "privacidade" (sem acento/maiúscula) acha 1 jogo', filtrar('PRIVACIDADE').length === 1);
+  t('filtro "ref" retorna só referências', filtrar('', 'ref').every(j => j.tipo === 'ref'));
+  t('presença: 1 de 2 = 50%', pctPresenca({a:true, b:false}) === 50);
+  t('presença: lista vazia = 0%', pctPresenca({}) === 0);
+  t('mover avança e respeita o limite 3', mover({coluna:3}, 1).coluna === 3 && mover({coluna:0}, 1).coluna === 1);
+  t('mover respeita o limite 0', mover({coluna:0}, -1).coluna === 0);
+  t('progresso do jogo "rede" = 25% nos dados iniciais', progresso(CARTOES_INICIAIS, 'rede') === 25);
+  const el = document.getElementById('testes'); el.hidden = false; el.textContent = r.join('\n');
+  console.log(r.join('\n'));
+});
+
+renderCatalogo(); renderFrequencia(); renderPainel();
+</script>
+</body>
+</html>
